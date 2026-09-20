@@ -1,3 +1,4 @@
+import base64
 import math
 import os
 
@@ -57,6 +58,23 @@ def create_chart(algo, step, n_max):
     return image_path
 
 
+def encode_image(image_path):
+    with open(image_path, "rb") as image_file:
+        return base64.b64encode(image_file.read()).decode("utf-8")
+
+
+def get_number_argument(argument_name):
+    value = request.args.get(argument_name)
+
+    if value is None:
+        return None
+
+    try:
+        return int(value.replace(",", ""))
+    except ValueError:
+        return None
+
+
 @app.route("/")
 def home():
     return jsonify({"message": "Time Complexity Visualizer API"})
@@ -65,8 +83,8 @@ def home():
 @app.route("/analyze")
 def analyze():
     algo = request.args.get("algo")
-    step = request.args.get("step", type=int)
-    n_max = request.args.get("n_max", type=int)
+    step = get_number_argument("step")
+    n_max = get_number_argument("n_max")
 
     if algo not in SUPPORTED_ALGORITHMS:
         return jsonify({
@@ -81,12 +99,14 @@ def analyze():
         return jsonify({"error": "n_max must be zero or a positive whole number."}), 400
 
     image_path = create_chart(algo, step, n_max)
+    image_base64 = encode_image(image_path)
 
     return jsonify({
         "algorithm": algo,
         "step": step,
         "n_max": n_max,
         "image_path": image_path,
+        "image_base64": image_base64,
         "message": "Chart generated successfully.",
     })
 

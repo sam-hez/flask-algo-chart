@@ -12,12 +12,29 @@ A simple Flask project that visualizes the time complexity of common algorithms.
 
 The server runs at `http://localhost:8000`.
 
-## Test the endpoint
+## Use the endpoint
 
 Open this URL in a browser:
 
-`http://localhost:8000/analyze?algo=linear_search&step=10&n_max=10000`
+`http://localhost:8000/analyze?algo=linear_search&step=10&n_max=10,000`
 
 Supported algorithms are `linear_search`, `bubble_sort`, `binary_search`, and `nested_loops`.
 
-Each request saves a PNG chart in the `generated_images` folder.
+Each request starts at `n = 0`, saves a PNG chart in the `generated_images` folder, and returns JSON like this:
+
+```json
+{
+  "algorithm": "linear_search",
+  "step": 10,
+  "n_max": 10000,
+  "image_path": "generated_images/linear_search_chart.png",
+  "image_base64": "iVBORw0KGgo...",
+  "message": "Chart generated successfully."
+}
+```
+
+`image_base64` is the Base64-encoded content of the saved PNG image.
+
+## Invalid requests
+
+The API returns a `400` error if `algo` is unsupported, `step` is not positive, or `n_max` is negative.
