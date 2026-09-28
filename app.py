@@ -6,11 +6,26 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from flask import Flask, jsonify, request
+from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy.exc import SQLAlchemyError
 from not_optimized import remove_duplicate_users
 from stack_queue_algorithms import stack_reverse, stack_search, queue_process
 
 
 app = Flask(__name__)
+app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///analyses.db"
+db = SQLAlchemy(app)
+
+
+class Analysis(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    algorithm = db.Column(db.String(50), nullable=False)
+    step = db.Column(db.Integer, nullable=False)
+    n_max = db.Column(db.Integer, nullable=False)
+
+
+with app.app_context():
+    db.create_all()
 
 
 SUPPORTED_ALGORITHMS = [
@@ -127,6 +142,40 @@ def analyze():
         "image_base64": image_base64,
         "message": "Chart generated successfully.",
     })
+
+
+@app.route("/save_analysis", methods=["POST"])
+def save_analysis():
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict):
+        return jsonify({"error": "Please send a JSON object."}), 400
+
+    algorithm = data.get("algorithm")
+    step = data.get("step")
+    n_max = data.get("n_max")
+
+    if algorithm not in SUPPORTED_ALGORITHMS:
+        return jsonify({"error": "Please choose a supported algorithm."}), 400
+    if type(step) is not int or step <= 0:
+        return jsonify({"error": "step must be a positive whole number."}), 400
+    if type(n_max) is not int or n_max < 0:
+        return jsonify({"error": "n_max must be zero or a positive whole number."}), 400
+
+    analysis = Analysis(algorithm=algorithm, step=step, n_max=n_max)
+    try:
+        db.session.add(analysis)
+        db.session.commit()
+    except SQLAlchemyError:
+        db.session.rollback()
+        return jsonify({"error": "Could not save the analysis."}), 500
+
+    return jsonify({
+        "id": analysis.id,
+        "algorithm": analysis.algorithm,
+        "step": analysis.step,
+        "n_max": analysis.n_max,
+        "message": "Analysis saved successfully.",
+    }), 201
 
 
 if __name__ == "__main__":

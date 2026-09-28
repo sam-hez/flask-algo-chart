@@ -40,6 +40,41 @@ Each request starts at `n = 0`, saves a PNG chart in the `generated_images` fold
 
 The API returns a `400` error if `algo` is unsupported, `step` is not positive, or `n_max` is negative.
 
+## Save an analysis to the database
+
+Install the requirements and start the server using the setup steps above.
+The app automatically creates `instance/analyses.db`, a local SQLite database.
+The `Analysis` table stores `id`, `algorithm`, `step`, and `n_max`.
+Flask-SQLAlchemy creates the table and saves rows using Python, with no raw SQL.
+
+Send a POST request from another terminal:
+
+```bash
+curl -X POST http://localhost:8000/save_analysis \
+  -H 'Content-Type: application/json' \
+  -d '{"algorithm": "stack_reverse", "step": 10, "n_max": 100}'
+```
+
+The response has status `201` and looks like:
+
+```json
+{
+  "id": 1,
+  "algorithm": "stack_reverse",
+  "step": 10,
+  "n_max": 100,
+  "message": "Analysis saved successfully."
+}
+```
+
+Use the `algorithm`, `step`, and `n_max` values returned by `/analyze`.
+Each POST saves a new row. It saves the analysis settings, not the chart image.
+The response is JSON, but the saved data goes into SQLite, not a JSON file.
+The database keeps the saved rows when the server restarts and is ignored by Git.
+
+Send `step` and `n_max` as JSON integers, without quotes or commas.
+Missing or invalid values return `400`. A database error returns `500`.
+
 ## Home activity
 
 `not_optimized.py` removes duplicate users by ID using nested loops.
@@ -92,5 +127,7 @@ The tests cover all Stack and Queue methods, ordering, empty errors, repeated
 values, mixed operations, reuse, and separate instances. They also check duplicate
 removal, algorithm results and counts, and PNG generation through the Flask API.
 Test charts are saved in a temporary folder and cleaned up afterward.
+Database tests use a temporary SQLite database to check saving, persistence,
+invalid requests, and recovery after a failed save.
 
 See [STUDY_NOTES.md](STUDY_NOTES.md) for the Big-O and sorting stability reading.
