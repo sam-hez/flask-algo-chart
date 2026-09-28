@@ -6,6 +6,8 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from flask import Flask, jsonify, request
+from not_optimized import remove_duplicate_users
+from stack_queue_algorithms import stack_reverse, stack_search, queue_process
 
 
 app = Flask(__name__)
@@ -16,9 +18,15 @@ SUPPORTED_ALGORITHMS = [
     "bubble_sort",
     "binary_search",
     "nested_loops",
+    "stack_reverse",
+    "stack_search",
+    "queue_process",
 ]
 
 IMAGE_FOLDER = "generated_images"
+
+users = [{'id': 1}, {'id': 2}, {'id': 3}, {'id': 2}]
+unique_users = remove_duplicate_users(users)
 
 
 def calculate_operations(algo, number_of_elements):
@@ -32,6 +40,16 @@ def calculate_operations(algo, number_of_elements):
         return math.log2(number_of_elements)
     if algo == "nested_loops":
         return number_of_elements ** 2
+    if algo == "stack_reverse":
+        result, operations = stack_reverse(range(number_of_elements))
+        return operations
+    if algo == "stack_search":
+        # -1 is missing, so we search the whole stack (worst case).
+        result, operations = stack_search(range(number_of_elements), -1)
+        return operations
+    if algo == "queue_process":
+        result, operations = queue_process(range(number_of_elements))
+        return operations
 
 
 def create_chart(algo, step, n_max):
